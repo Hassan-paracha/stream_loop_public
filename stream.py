@@ -48,7 +48,8 @@ def run_stream():
             
             print(f"Now Streaming: {video}")
             # Get a temporary direct link from Dropbox
-            video_url = subprocess.check_output(f'rclone link "db:Shorts/{video}"', shell=True).decode().strip()
+            raw_url = subprocess.check_output(f'rclone link "db:Shorts/{video}"', shell=True).decode().strip()
+            video_url = raw_url.replace("www.dropbox.com", "dl.dropboxusercontent.com").replace("?dl=0", "")
             
             # FFmpeg Command - Optimized for YouTube Live
             cmd = [

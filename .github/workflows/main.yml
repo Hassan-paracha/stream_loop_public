@@ -1,0 +1,33 @@
+name: Fixed 3-Show Schedule
+on:
+  schedule:
+    - cron: '0 0,8,16 * * *' # Starts exactly at 00:00, 08:00, and 16:00 UTC
+  workflow_dispatch:          # Lets you start it manually for testing
+
+jobs:
+  stream:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg rclone
+          pip install google-api-python-client google-auth-oauthlib
+
+      - name: Configure Rclone for Dropbox
+        run: |
+          mkdir -p ~/.config/rclone
+          echo "[db]" > ~/.config/rclone/rclone.conf
+          echo "type = dropbox" >> ~/.config/rclone/rclone.conf
+          echo "token = ${{ secrets.RCLONE_CONFIG_DATA }}" >> ~/.config/rclone/rclone.conf
+
+      - name: Execute Stream (5-Hour Timeout)
+        env:
+          YT_STREAM_KEY: ${{ secrets.YT_STREAM_KEY }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+        # The 'timeout' command ensures we exit before GitHub's 6hr limit
+        run: timeout 5h python stream.py

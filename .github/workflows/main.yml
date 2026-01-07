@@ -1,35 +1,45 @@
-name: Fixed 3-Show Schedule
+name: YouTube 24/7 Stream
+
 on:
   schedule:
-    - cron: '0 0,8,16 * * *' # Starts exactly at 00:00, 08:00, and 16:00 UTC
-  workflow_dispatch:          # Lets you start it manually for testing
+    - cron: '0 0,8,16 * * *' # Starts at 5 AM, 1 PM, and 9 PM Pakistan Time
+  workflow_dispatch: # Allows you to start it manually if needed
+
+# SAFETY LOCK: This prevents two streams from running at the same time.
+concurrency:
+  group: youtube-stream
+  cancel-in-progress: true 
 
 jobs:
   stream:
     runs-on: ubuntu-latest
+    timeout-minutes: 320 # Hard-stop after 5 hours and 20 mins
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Install System Dependencies
+      - name: Install Rclone and FFmpeg
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg rclone
-          pip install google-api-python-client google-auth-oauthlib
+          sudo apt-get install -y rclone ffmpeg
 
-      - name: Setup Dropbox Config
+      - name: Config Rclone
         run: |
           mkdir -p ~/.config/rclone
-          cat <<EOF > ~/.config/rclone/rclone.conf
-          [db]
-          type = dropbox
-          token = ${{ secrets.RCLONE_CONFIG_DATA }}
-          EOF
-          
-      - name: Execute Stream (5-Hour Timeout)
+          echo "${{ secrets.RCLONE_CONFIG }}" > ~/.config/rclone/rclone.conf
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: pip install google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client
+
+      - name: Run Stream Engine
         env:
           YT_STREAM_KEY: ${{ secrets.YT_STREAM_KEY }}
-          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
           YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
-        # The 'timeout' command ensures we exit before GitHub's 6hr limit
-        run: timeout 5h python stream.py
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+        run: python stream.py

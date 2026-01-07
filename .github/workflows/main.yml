@@ -2,7 +2,7 @@ name: YouTube 24/7 Stream
 
 on:
   schedule:
-    - cron: '0 0,8,16 * * *' # Starts at 5 AM, 1 PM, and 9 PM Pakistan Time
+    - cron: '0 3,11,19 * * *' # Starts at 5 AM, 1 PM, and 9 PM Pakistan Time
   workflow_dispatch: # Allows you to start it manually if needed
 
 # SAFETY LOCK: This prevents two streams from running at the same time.

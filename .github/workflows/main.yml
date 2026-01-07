@@ -1,45 +1,52 @@
-name: YouTube 24/7 Stream
+name: 24/7 Viral Shorts Stream
 
 on:
   schedule:
-    - cron: '0 3,11,19 * * *' # Starts at 5 AM, 1 PM, and 9 PM Pakistan Time
-  workflow_dispatch: # Allows you to start it manually if needed
+    # 03:00 UTC = 8:00 AM PKT
+    # 11:00 UTC = 4:00 PM PKT
+    # 19:00 UTC = 12:00 AM PKT
+    - cron: '0 3,11,19 * * *'
+  workflow_dispatch: # Manual Trigger
 
-# SAFETY LOCK: This prevents two streams from running at the same time.
+# PREVENTS OVERLAPPING STREAMS
 concurrency:
   group: youtube-stream
-  cancel-in-progress: true 
+  cancel-in-progress: true
 
 jobs:
   stream:
     runs-on: ubuntu-latest
-    timeout-minutes: 320 # Hard-stop after 5 hours and 20 mins
+    timeout-minutes: 320 # Safety: Kills job if it runs over 5h 20m
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      - name: Install Rclone and FFmpeg
+      - name: Install System Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y rclone ffmpeg
+          sudo apt-get install -y ffmpeg rclone
 
-      - name: Config Rclone
-        run: |
-          mkdir -p ~/.config/rclone
-          echo "${{ secrets.RCLONE_CONFIG }}" > ~/.config/rclone/rclone.conf
-
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
+          python-version: '3.10'
 
-      - name: Install dependencies
-        run: pip install google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client
+      - name: Install Libraries
+        run: pip install google-api-python-client google-auth-oauthlib
 
-      - name: Run Stream Engine
+      - name: Configure Rclone (Dropbox)
+        run: |
+          mkdir -p ~/.config/rclone
+          cat <<EOF > ~/.config/rclone/rclone.conf
+          [db]
+          type = dropbox
+          token = ${{ secrets.RCLONE_CONFIG_DATA }}
+          EOF
+
+      - name: Launch Stream Engine
         env:
           YT_STREAM_KEY: ${{ secrets.YT_STREAM_KEY }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
           YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
-          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
         run: python stream.py

@@ -16,13 +16,15 @@ jobs:
           sudo apt-get install -y ffmpeg rclone
           pip install google-api-python-client google-auth-oauthlib
 
-      - name: Configure Rclone for Dropbox
+      - name: Setup Dropbox Config
         run: |
           mkdir -p ~/.config/rclone
-          echo "[db]" > ~/.config/rclone/rclone.conf
-          echo "type = dropbox" >> ~/.config/rclone/rclone.conf
-          echo "token = ${{ secrets.RCLONE_CONFIG_DATA }}" >> ~/.config/rclone/rclone.conf
-
+          cat <<EOF > ~/.config/rclone/rclone.conf
+          [db]
+          type = dropbox
+          token = ${{ secrets.RCLONE_CONFIG_DATA }}
+          EOF
+          
       - name: Execute Stream (5-Hour Timeout)
         env:
           YT_STREAM_KEY: ${{ secrets.YT_STREAM_KEY }}

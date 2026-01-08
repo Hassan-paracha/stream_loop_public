@@ -5,8 +5,8 @@ from google.oauth2.credentials import Credentials
 
 # --- CONFIGURATION ---
 STREAM_DURATION = 18000  # 5 Hours
-BITRATE = "2000k"
-BUFSIZE = "4000k"
+BITRATE = "800k"
+BUFSIZE = "1600k"
 
 # --- 1. OPTIMIZED METADATA SETS ---
 METADATA_OPTIONS = [

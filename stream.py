@@ -136,13 +136,21 @@ def run_stream():
 
                 try:
                     raw_url = subprocess.check_output(f'rclone link "db:Shorts/{video}"', shell=True).decode().strip()
-                    # BULLETPROOF URL CONVERSION
+                    
+                    # 1. Start with the direct user content domain
                     video_url = raw_url.replace("www.dropbox.com", "dl.dropboxusercontent.com")
-                    video_url = video_url.replace("?dl=0", "?dl=1").replace("&dl=0", "&dl=1")
-                    if "?dl=" not in video_url: video_url += "?dl=1"
+                    
+                    # 2. Remove any existing dl=0 or dl=1 to 'clean' the link
+                    video_url = video_url.replace("?dl=0", "").replace("&dl=0", "").replace("?dl=1", "").replace("&dl=1", "")
+                    
+                    # 3. Add a fresh dl=1 tag correctly
+                    if "?" in video_url:
+                        video_url += "&dl=1"
+                    else:
+                        video_url += "?dl=1"
                     
                     print(f"▶️ Now Playing: {video}")
-                    
+                    print(f"🔗 Clean Link: {video_url}") # This helps you debug!                    
                     cmd = [
                         'ffmpeg', '-re', 
                         '-reconnect', '1', '-reconnect_streamed', '1', '-reconnect_delay_max', '5',

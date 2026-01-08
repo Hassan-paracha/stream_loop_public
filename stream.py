@@ -117,6 +117,7 @@ def run_stream():
 
     while (time.time() - start_time) < STREAM_DURATION:
         try:
+            # 1. Fetch Videos from Rclone
             result = subprocess.check_output("rclone lsf db:Shorts", shell=True).decode().splitlines()
             video_list = [v for v in result if v.strip() and v.endswith('.mp4')]
             random.shuffle(video_list)
@@ -127,32 +128,31 @@ def run_stream():
                 continue
 
             for video in video_list:
-                if (time.time() - start_time) > STREAM_DURATION: return
+                if (time.time() - start_time) > STREAM_DURATION: 
+                    return
 
+                # 2. Check Auto-Chatter
                 if youtube and live_chat_id and (time.time() - last_chat_time) > chat_interval:
                     send_chat_pair(youtube, live_chat_id)
                     last_chat_time = time.time()
                     chat_interval = random.randint(1800, 2700)
 
-               try:
+                # 3. Get Link and FORCE Direct Download Format
+                try:
                     raw_url = subprocess.check_output(f'rclone link "db:Shorts/{video}"', shell=True).decode().strip()
                     
-                    # Force the Direct Content Domain
+                    # Clean and rebuild the URL to avoid 404 errors
                     video_url = raw_url.replace("www.dropbox.com", "dl.dropboxusercontent.com")
+                    video_url = video_url.replace("?dl=0", "").replace("&dl=0", "").replace("?dl=1", "").replace("&dl=1", "")
                     
-                    # Remove all existing parameters to rebuild cleanly
                     if "?" in video_url:
-                        base_url = video_url.split("?")[0]
-                        # Capture the rlkey as it is mandatory for these links
-                        if "rlkey=" in video_url:
-                            rlkey_part = video_url.split("rlkey=")[1].split("&")[0]
-                            video_url = f"{base_url}?rlkey={rlkey_part}&dl=1"
-                        else:
-                            video_url = f"{base_url}?dl=1"
+                        video_url += "&dl=1"
                     else:
                         video_url += "?dl=1"
                     
-                    print(f"▶️ Verified Link: {video_url}")                  
+                    print(f"▶️ Now Playing: {video}")
+
+                    # 4. Launch FFmpeg
                     cmd = [
                         'ffmpeg', '-re', 
                         '-reconnect', '1', '-reconnect_streamed', '1', '-reconnect_delay_max', '5',
@@ -165,7 +165,7 @@ def run_stream():
                     subprocess.run(cmd, check=True)
                     
                 except Exception as e:
-                    print(f"⚠️ Video Error: {e}")
+                    print(f"⚠️ Video Playback Error: {e}")
                     time.sleep(5)
 
         except Exception as e:

@@ -2,13 +2,9 @@ name: 24/7 Viral Shorts Stream
 
 on:
   schedule:
-    # 03:00 UTC = 8:00 AM PKT
-    # 11:00 UTC = 4:00 PM PKT
-    # 19:00 UTC = 12:00 AM PKT
     - cron: '0 3,11,19 * * *'
-  workflow_dispatch: # Manual Trigger
+  workflow_dispatch:
 
-# PREVENTS OVERLAPPING STREAMS
 concurrency:
   group: youtube-stream
   cancel-in-progress: true
@@ -16,7 +12,7 @@ concurrency:
 jobs:
   stream:
     runs-on: ubuntu-latest
-    timeout-minutes: 320 # Safety: Kills job if it runs over 5h 20m
+    timeout-minutes: 320
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4

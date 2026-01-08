@@ -134,23 +134,25 @@ def run_stream():
                     last_chat_time = time.time()
                     chat_interval = random.randint(1800, 2700)
 
-                try:
+               try:
                     raw_url = subprocess.check_output(f'rclone link "db:Shorts/{video}"', shell=True).decode().strip()
                     
-                    # 1. Start with the direct user content domain
+                    # Force the Direct Content Domain
                     video_url = raw_url.replace("www.dropbox.com", "dl.dropboxusercontent.com")
                     
-                    # 2. Remove any existing dl=0 or dl=1 to 'clean' the link
-                    video_url = video_url.replace("?dl=0", "").replace("&dl=0", "").replace("?dl=1", "").replace("&dl=1", "")
-                    
-                    # 3. Add a fresh dl=1 tag correctly
+                    # Remove all existing parameters to rebuild cleanly
                     if "?" in video_url:
-                        video_url += "&dl=1"
+                        base_url = video_url.split("?")[0]
+                        # Capture the rlkey as it is mandatory for these links
+                        if "rlkey=" in video_url:
+                            rlkey_part = video_url.split("rlkey=")[1].split("&")[0]
+                            video_url = f"{base_url}?rlkey={rlkey_part}&dl=1"
+                        else:
+                            video_url = f"{base_url}?dl=1"
                     else:
                         video_url += "?dl=1"
                     
-                    print(f"▶️ Now Playing: {video}")
-                    print(f"🔗 Clean Link: {video_url}") # This helps you debug!                    
+                    print(f"▶️ Verified Link: {video_url}")                  
                     cmd = [
                         'ffmpeg', '-re', 
                         '-reconnect', '1', '-reconnect_streamed', '1', '-reconnect_delay_max', '5',
